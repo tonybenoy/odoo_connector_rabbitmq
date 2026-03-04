@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Tree View -->
+    <record id="rabbitmq_consumer_rule_view_tree" model="ir.ui.view">
+        <field name="name">rabbitmq.consumer.rule.tree</field>
+        <field name="model">rabbitmq.consumer.rule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="queue_name"/>
+                <field name="exchange_name"/>
+                <field name="routing_key"/>
+                <field name="target_model"/>
+                <field name="target_method"/>
+                <field name="prefetch_count"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="rabbitmq_consumer_rule_view_form" model="ir.ui.view">
+        <field name="name">rabbitmq.consumer.rule.form</field>
+        <field name="model">rabbitmq.consumer.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Rule Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Queue Configuration">
+                            <field name="queue_name"/>
+                            <field name="exchange_name"/>
+                            <field name="routing_key"/>
+                        </group>
+                        <group string="Processing">
+                            <field name="target_model"
+                                   placeholder="e.g. res.partner"/>
+                            <field name="target_method"
+                                   placeholder="e.g. _rmq_handle_message"/>
+                            <field name="prefetch_count"/>
+                            <field name="auto_ack"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="rabbitmq_consumer_rule_action" model="ir.actions.act_window">
+        <field name="name">Consumer Rules</field>
+        <field name="res_model">rabbitmq.consumer.rule</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

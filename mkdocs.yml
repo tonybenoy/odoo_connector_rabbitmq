@@ -1,0 +1,77 @@
+site_name: Odoo Connector RabbitMQ
+site_description: Production-grade event-driven architecture for Odoo 17.0 via RabbitMQ
+site_url: https://tonybenoy.github.io/odoo_connector_rabbitmq/
+repo_url: https://github.com/tonybenoy/odoo_connector_rabbitmq
+repo_name: tonybenoy/odoo_connector_rabbitmq
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Configuration: getting-started/configuration.md
+      - Quick Start: getting-started/quickstart.md
+  - Guides:
+      - Publishing Events: guides/publishing-events.md
+      - Consuming Messages: guides/consuming-messages.md
+      - Retry & Dead Letter: guides/retry-and-dead-letter.md
+      - Security: guides/security.md
+  - Reference:
+      - Models: reference/models.md
+      - Decorator: reference/decorator.md
+      - Configuration: reference/configuration.md
+      - Cron Jobs: reference/cron-jobs.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Outbox Pattern: architecture/outbox-pattern.md
+      - Multi-Worker Safety: architecture/multi-worker-safety.md
+  - Deployment:
+      - Docker: deployment/docker.md
+      - Production: deployment/production.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search

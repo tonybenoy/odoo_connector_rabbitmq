@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.rabbitmq</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="RabbitMQ" string="RabbitMQ"
+                     data-key="odoo_connector_rabbitmq">
+                    <block title="Connection">
+                        <setting string="Default Connection"
+                                 help="Select the default RabbitMQ connection to use.">
+                            <field name="rabbitmq_connection_id"/>
+                        </setting>
+                    </block>
+                    <block title="Publishing">
+                        <setting string="Enable Publishing"
+                                 help="Enable outbound event publishing to RabbitMQ.">
+                            <field name="rabbitmq_publish_enabled"/>
+                        </setting>
+                    </block>
+                    <block title="Consuming">
+                        <setting string="Enable Consuming"
+                                 help="Enable inbound message consuming from RabbitMQ.">
+                            <field name="rabbitmq_consume_enabled"/>
+                        </setting>
+                        <setting string="Consumer Interval"
+                                 help="Interval in minutes between consumer cron runs.">
+                            <field name="rabbitmq_consumer_interval"/>
+                        </setting>
+                    </block>
+                    <block title="Reliability">
+                        <setting string="Max Retries"
+                                 help="Maximum number of retry attempts for failed events.">
+                            <field name="rabbitmq_max_retries"/>
+                        </setting>
+                        <setting string="Log Retention"
+                                 help="Number of days to keep sent/received event logs.">
+                            <field name="rabbitmq_log_retention_days"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Tree View -->
+    <record id="rabbitmq_connection_view_tree" model="ir.ui.view">
+        <field name="name">rabbitmq.connection.tree</field>
+        <field name="model">rabbitmq.connection</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="host"/>
+                <field name="port"/>
+                <field name="virtual_host"/>
+                <field name="ssl_enabled"/>
+                <field name="state" decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"
+                       decoration-muted="state == 'disconnected'" widget="badge"/>
+                <field name="active" column_invisible="True"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="rabbitmq_connection_view_form" model="ir.ui.view">
+        <field name="name">rabbitmq.connection.form</field>
+        <field name="model">rabbitmq.connection</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" string="Test Connection"
+                            type="object" class="oe_highlight"
+                            groups="odoo_connector_rabbitmq.group_rabbitmq_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="disconnected,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Connection Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Connection URI">
+                            <field name="connection_uri" placeholder="amqp://user:pass@host:5672/vhost"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Connection Details">
+                            <field name="host"/>
+                            <field name="port"/>
+                            <field name="username"/>
+                            <field name="password" password="True"/>
+                            <field name="virtual_host"/>
+                        </group>
+                        <group string="Advanced">
+                            <field name="heartbeat"/>
+                            <field name="connection_timeout"/>
+                            <field name="ssl_enabled"/>
+                            <field name="ssl_ca_cert" invisible="not ssl_enabled"
+                                   filename="ssl_ca_cert_filename"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Status" invisible="not last_error">
+                        <field name="last_error" readonly="True"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="rabbitmq_connection_action" model="ir.actions.act_window">
+        <field name="name">Connections</field>
+        <field name="res_model">rabbitmq.connection</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

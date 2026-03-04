@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rabbitmq_connection_user,rabbitmq.connection.user,model_rabbitmq_connection,group_rabbitmq_user,1,0,0,0
+access_rabbitmq_connection_manager,rabbitmq.connection.manager,model_rabbitmq_connection,group_rabbitmq_manager,1,1,1,1
+access_rabbitmq_event_rule_user,rabbitmq.event.rule.user,model_rabbitmq_event_rule,group_rabbitmq_user,1,0,0,0
+access_rabbitmq_event_rule_manager,rabbitmq.event.rule.manager,model_rabbitmq_event_rule,group_rabbitmq_manager,1,1,1,1
+access_rabbitmq_consumer_rule_user,rabbitmq.consumer.rule.user,model_rabbitmq_consumer_rule,group_rabbitmq_user,1,0,0,0
+access_rabbitmq_consumer_rule_manager,rabbitmq.consumer.rule.manager,model_rabbitmq_consumer_rule,group_rabbitmq_manager,1,1,1,1
+access_rabbitmq_event_log_user,rabbitmq.event.log.user,model_rabbitmq_event_log,group_rabbitmq_user,1,0,0,0
+access_rabbitmq_event_log_manager,rabbitmq.event.log.manager,model_rabbitmq_event_log,group_rabbitmq_manager,1,1,1,1

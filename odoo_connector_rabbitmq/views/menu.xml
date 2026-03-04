@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Top-level app menu -->
+    <menuitem id="rabbitmq_menu_root"
+              name="RabbitMQ"
+              web_icon="odoo_connector_rabbitmq,static/description/icon.png"
+              groups="odoo_connector_rabbitmq.group_rabbitmq_user"
+              sequence="100"/>
+
+    <!-- Dashboard -->
+    <menuitem id="rabbitmq_menu_dashboard"
+              name="Dashboard"
+              parent="rabbitmq_menu_root"
+              action="rabbitmq_event_log_dashboard_action"
+              sequence="10"/>
+
+    <!-- Monitoring -->
+    <menuitem id="rabbitmq_menu_monitoring"
+              name="Monitoring"
+              parent="rabbitmq_menu_root"
+              sequence="20"/>
+
+    <menuitem id="rabbitmq_menu_event_log"
+              name="Event Log"
+              parent="rabbitmq_menu_monitoring"
+              action="rabbitmq_event_log_action"
+              sequence="10"/>
+
+    <!-- Configuration -->
+    <menuitem id="rabbitmq_menu_configuration"
+              name="Configuration"
+              parent="rabbitmq_menu_root"
+              groups="odoo_connector_rabbitmq.group_rabbitmq_manager"
+              sequence="30"/>
+
+    <menuitem id="rabbitmq_menu_connections"
+              name="Connections"
+              parent="rabbitmq_menu_configuration"
+              action="rabbitmq_connection_action"
+              sequence="10"/>
+
+    <menuitem id="rabbitmq_menu_event_rules"
+              name="Event Rules"
+              parent="rabbitmq_menu_configuration"
+              action="rabbitmq_event_rule_action"
+              sequence="20"/>
+
+    <menuitem id="rabbitmq_menu_consumer_rules"
+              name="Consumer Rules"
+              parent="rabbitmq_menu_configuration"
+              action="rabbitmq_consumer_rule_action"
+              sequence="30"/>
+
+    <!-- Settings menu item -->
+    <menuitem id="rabbitmq_menu_settings"
+              name="Settings"
+              parent="rabbitmq_menu_configuration"
+              action="base_setup.action_general_configuration"
+              sequence="100"/>
+
+</odoo>
