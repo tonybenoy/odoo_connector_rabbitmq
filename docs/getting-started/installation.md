@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Odoo 17.0**
+- **Odoo 17.0, 18.0, or 19.0** (use the matching branch)
 - **Python 3.10+**
 - **RabbitMQ 3.x** (see [Docker setup](../deployment/docker.md) for the easiest way to get started)
 

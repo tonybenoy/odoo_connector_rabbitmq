@@ -1,0 +1,48 @@
+services:
+  db17:
+    image: postgres:16
+    container_name: integ17-db
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  rabbitmq17:
+    image: rabbitmq:3-management
+    container_name: integ17-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  odoo17:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        ODOO_VERSION: "17.0"
+    container_name: integ17-web
+    depends_on:
+      db17:
+        condition: service_started
+      rabbitmq17:
+        condition: service_healthy
+    ports:
+      - "17069:8069"
+    environment:
+      HOST: db17
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - ./odoo_connector_rabbitmq:/mnt/extra-addons/odoo_connector_rabbitmq
+    command: >
+      odoo
+      --db_host=db17 --db_user=odoo --db_password=odoo
+      -d integ17 -i odoo_connector_rabbitmq
+      --without-demo=all

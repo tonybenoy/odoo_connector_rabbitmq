@@ -1,0 +1,48 @@
+services:
+  db19:
+    image: postgres:16
+    container_name: integ19-db
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  rabbitmq19:
+    image: rabbitmq:3-management
+    container_name: integ19-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  odoo19:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        ODOO_VERSION: "19.0"
+    container_name: integ19-web
+    depends_on:
+      db19:
+        condition: service_started
+      rabbitmq19:
+        condition: service_healthy
+    ports:
+      - "19069:8069"
+    environment:
+      HOST: db19
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - ./odoo_connector_rabbitmq:/mnt/extra-addons/odoo_connector_rabbitmq
+    command: >
+      odoo
+      --db_host=db19 --db_user=odoo --db_password=odoo
+      -d integ19 -i odoo_connector_rabbitmq
+      --without-demo=all
