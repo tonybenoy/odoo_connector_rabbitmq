@@ -1,7 +1,7 @@
 [project]
 name = "odoo-connector-rabbitmq"
 version = "1.0.0"
-description = "Production-grade event-driven architecture for Odoo via RabbitMQ"
+description = "Production-grade event-driven architecture for Odoo 18.0 via RabbitMQ"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"

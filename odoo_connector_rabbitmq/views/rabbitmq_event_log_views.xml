@@ -101,7 +101,7 @@
                 <filter name="filter_inbound" string="Inbound"
                         domain="[('direction', '=', 'inbound')]"/>
                 <separator/>
-                <group name="group_by">
+                <group expand="0" string="Group By">
                     <filter name="group_state" string="State"
                             context="{'group_by': 'state'}"/>
                     <filter name="group_direction" string="Direction"
