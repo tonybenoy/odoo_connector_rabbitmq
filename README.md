@@ -1,14 +1,6 @@
 # Odoo Connector RabbitMQ
 
-Production-grade event-driven architecture for Odoo via RabbitMQ.
-
-## Supported Versions
-
-| Odoo Version | Branch | Status |
-|-------------|--------|--------|
-| 19.0 | [`19.0`](../../tree/19.0) / `main` | Supported |
-| 18.0 | [`18.0`](../../tree/18.0) | Supported |
-| 17.0 | [`17.0`](../../tree/17.0) | Supported |
+Production-grade event-driven architecture for Odoo 17.0 via RabbitMQ.
 
 ## Features
 
@@ -257,7 +249,7 @@ Additional safeguards:
 
 ## Requirements
 
-- Odoo 17.0, 18.0, or 19.0 (use the matching branch)
+- Odoo 17.0
 - Python 3.10+
 - `pika >= 1.3.0`
 - RabbitMQ 3.x

@@ -1,6 +1,6 @@
 # Odoo Connector RabbitMQ
 
-Production-grade event-driven architecture for Odoo via RabbitMQ.
+Production-grade event-driven architecture for Odoo 17.0 via RabbitMQ.
 
 ## What is it?
 

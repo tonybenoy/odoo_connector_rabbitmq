@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- List View -->
+    <!-- Tree View -->
     <record id="rabbitmq_event_log_view_tree" model="ir.ui.view">
-        <field name="name">rabbitmq.event.log.list</field>
+        <field name="name">rabbitmq.event.log.tree</field>
         <field name="model">rabbitmq.event.log</field>
         <field name="arch" type="xml">
-            <list decoration-success="state in ('sent', 'received')"
+            <tree decoration-success="state in ('sent', 'received')"
                   decoration-danger="state in ('failed', 'dead')"
                   decoration-warning="state == 'pending'"
                   default_order="create_date desc">
@@ -23,7 +23,7 @@
                        decoration-warning="state == 'pending'"/>
                 <field name="retry_count"/>
                 <field name="next_retry_at"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -101,7 +101,7 @@
                 <filter name="filter_inbound" string="Inbound"
                         domain="[('direction', '=', 'inbound')]"/>
                 <separator/>
-                <group name="group_by">
+                <group expand="0" string="Group By">
                     <filter name="group_state" string="State"
                             context="{'group_by': 'state'}"/>
                     <filter name="group_direction" string="Direction"
@@ -119,7 +119,7 @@
     <record id="rabbitmq_event_log_action" model="ir.actions.act_window">
         <field name="name">Event Log</field>
         <field name="res_model">rabbitmq.event.log</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="context">{'search_default_filter_pending': 0}</field>
     </record>
 
@@ -127,7 +127,7 @@
     <record id="rabbitmq_event_log_dashboard_action" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
         <field name="res_model">rabbitmq.event.log</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="context">{'search_default_group_state': 1}</field>
     </record>
 
