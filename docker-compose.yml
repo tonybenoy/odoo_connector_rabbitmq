@@ -1,0 +1,54 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: odoo-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16
+    container_name: odoo-db
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  odoo:
+    image: odoo:17.0
+    container_name: odoo-web
+    depends_on:
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./odoo_connector_rabbitmq:/mnt/extra-addons/odoo_connector_rabbitmq
+      - ./odoo.conf:/etc/odoo/odoo.conf
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
+  pg_data:
+  odoo_data:

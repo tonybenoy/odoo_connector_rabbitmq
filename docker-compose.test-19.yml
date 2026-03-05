@@ -1,0 +1,34 @@
+services:
+  db19:
+    image: postgres:16
+    container_name: odoo19-db
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  odoo19:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        ODOO_VERSION: "19.0"
+    container_name: odoo19-web
+    depends_on:
+      - db19
+    ports:
+      - "19069:8069"
+    environment:
+      HOST: db19
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - ./odoo_connector_rabbitmq:/mnt/extra-addons/odoo_connector_rabbitmq
+    command: >
+      odoo
+      --db_host=db19 --db_user=odoo --db_password=odoo
+      -d test19 -i odoo_connector_rabbitmq
+      --test-enable --stop-after-init --log-level=test
+      --without-demo=all

@@ -1,20 +1,32 @@
 # Publishing Events
 
-There are two ways to publish events: the **mixin** for automatic lifecycle capture, and the **`@rabbitmq_event` decorator** for explicit method-level emission.
+There are three ways to publish events: the **global hook** (zero-code, recommended), the **legacy mixin**, and the **`@rabbitmq_event` decorator**.
 
-## Mixin Approach
+## Zero-Code Global Hook (Recommended)
 
-Inherit `rabbitmq.event.bus.mixin` on any model to enable automatic event capture:
+No Python code needed. The module patches `BaseModel.create`, `write`, and `unlink` at load time. Just create **Event Rules** in the UI:
 
-```python
-from odoo import models
+1. Go to **RabbitMQ > Configuration > Event Rules > Create**
+2. Select the **Model** (e.g. `res.partner`)
+3. Choose the **Event Type**
+4. Set the **Exchange** and **Routing Key**
+5. Save — events start firing immediately, no restart needed
 
-class SaleOrder(models.Model):
-    _name = 'sale.order'
-    _inherit = ['sale.order', 'rabbitmq.event.bus.mixin']
-```
+### How it works
 
-Then create **Event Rules** in the UI (**RabbitMQ > Configuration > Event Rules**) to define which events to capture.
+At module load time (`post_load`), the module installs a global hook on `BaseModel`. Every ORM operation hits an inlined fast path: 1 direct attribute access + 1 dict `in` check. If no rules exist for the model, the overhead is ~nanoseconds. All filtering (skip internal models, transients, mixin models) is done once at cache build time, not per-call.
+
+The cache is invalidated automatically when Event Rules are created, modified, or deleted, or when Settings are saved. New rules take effect immediately.
+
+The global hook can be disabled entirely in **Settings > RabbitMQ > Enable Global Hook**.
+
+The hook automatically skips:
+
+- Internal models (`rabbitmq.*`, `ir.config_parameter`)
+- Transient/wizard models
+- Models using the legacy mixin (to avoid double-firing)
+
+All event logic runs inside `try/except` — event bus bugs never break normal ORM operations.
 
 ### Supported event types
 
@@ -54,6 +66,23 @@ Routing keys support placeholders:
 - `{event}` — replaced with the event type
 
 Example: `{model}.{event}` becomes `sale_order.create`.
+
+## Legacy: Mixin Approach
+
+!!! note
+    The mixin still works for backward compatibility, but new integrations should use the global hook instead. Models using the mixin are automatically skipped by the global hook to prevent double-firing.
+
+Inherit `rabbitmq.event.bus.mixin` on any model to enable automatic event capture:
+
+```python
+from odoo import models
+
+class SaleOrder(models.Model):
+    _name = 'sale.order'
+    _inherit = ['sale.order', 'rabbitmq.event.bus.mixin']
+```
+
+Then create **Event Rules** in the UI (**RabbitMQ > Configuration > Event Rules**) to define which events to capture.
 
 ## Decorator Approach
 
@@ -107,14 +136,14 @@ Additional fields vary by event type:
 | `state_change` | `old_values`, `state_transition` |
 | decorator | `result` (method return value) |
 
-## Mixin vs Decorator
+## Global Hook vs Mixin vs Decorator
 
-| Aspect | Mixin | Decorator |
-|--------|-------|-----------|
-| Configuration | UI-driven (Event Rules) | Code-driven |
-| Scope | Model lifecycle events | Any method |
-| Flexibility | Configurable at runtime | Fixed at deploy time |
-| Use case | Standard CRUD tracking | Business logic events |
+| Aspect | Global Hook | Mixin (legacy) | Decorator |
+|--------|-------------|----------------|-----------|
+| Configuration | UI-only, zero code | UI + Python inheritance | Code-driven |
+| Scope | Model lifecycle events | Model lifecycle events | Any method |
+| Flexibility | Configurable at runtime | Configurable at runtime | Fixed at deploy time |
+| Use case | Standard CRUD tracking | Backward compatibility | Business logic events |
 
 !!! tip
-    Use both together — the mixin for CRUD tracking and the decorator for business-specific events like order confirmation or payment processing.
+    Use the global hook for CRUD tracking and the decorator for business-specific events like order confirmation or payment processing.

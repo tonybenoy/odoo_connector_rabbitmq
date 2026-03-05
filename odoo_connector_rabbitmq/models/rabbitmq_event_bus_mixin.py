@@ -13,11 +13,17 @@ class RabbitMQEventBusMixin(models.AbstractModel):
 
     def _rmq_get_rules(self, event_type):
         """Get active event rules for this model and event type."""
-        return self.env['rabbitmq.event.rule'].sudo().search([
-            ('model_name', '=', self._name),
-            ('event_type', '=', event_type),
-            ('active', '=', True),
-        ])
+        return (
+            self.env['rabbitmq.event.rule']
+            .sudo()
+            .search(
+                [
+                    ('model_name', '=', self._name),
+                    ('event_type', '=', event_type),
+                    ('active', '=', True),
+                ]
+            )
+        )
 
     def _rmq_prepare_payload(self, event_type, records, vals=None, old_vals=None):
         """Build the standardized event payload."""
@@ -58,22 +64,27 @@ class RabbitMQEventBusMixin(models.AbstractModel):
     def _rmq_log_event(self, rule, payload):
         """Create an outbound event log entry."""
         event_id = payload.get('event_id', str(uuid.uuid4()))
-        self.env['rabbitmq.event.log'].sudo().create({
-            'event_id': event_id,
-            'direction': 'outbound',
-            'model_name': self._name,
-            'event_type': payload.get('event_type', ''),
-            'record_ids': json.dumps(payload.get('record_ids', [])),
-            'payload': json.dumps(payload, default=str),
-            'exchange_name': rule.exchange_name,
-            'routing_key': rule._get_routing_key(),
-            'state': 'pending',
-            'max_retries': int(
-                self.env['ir.config_parameter'].sudo().get_param(
-                    'odoo_connector_rabbitmq.max_retries', '5',
-                )
-            ),
-        })
+        self.env['rabbitmq.event.log'].sudo().create(
+            {
+                'event_id': event_id,
+                'direction': 'outbound',
+                'model_name': self._name,
+                'event_type': payload.get('event_type', ''),
+                'record_ids': json.dumps(payload.get('record_ids', [])),
+                'payload': json.dumps(payload, default=str),
+                'exchange_name': rule.exchange_name,
+                'routing_key': rule._get_routing_key(),
+                'state': 'pending',
+                'max_retries': int(
+                    self.env['ir.config_parameter']
+                    .sudo()
+                    .get_param(
+                        'odoo_connector_rabbitmq.max_retries',
+                        '5',
+                    )
+                ),
+            }
+        )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -123,7 +134,9 @@ class RabbitMQEventBusMixin(models.AbstractModel):
                 if not (set(vals.keys()) & rule_field_names):
                     continue
             payload = self._rmq_prepare_payload(
-                'write', self, vals=vals,
+                'write',
+                self,
+                vals=vals,
                 old_vals=old_values.get(self[:1].id, {}),
             )
             self._rmq_log_event(rule, payload)
@@ -138,7 +151,8 @@ class RabbitMQEventBusMixin(models.AbstractModel):
                 new_state = vals[sf]
                 if old_state != new_state:
                     payload = self._rmq_prepare_payload(
-                        'state_change', record,
+                        'state_change',
+                        record,
                         vals={sf: new_state},
                         old_vals={sf: old_state},
                     )
@@ -157,10 +171,12 @@ class RabbitMQEventBusMixin(models.AbstractModel):
             # Snapshot before deletion
             snapshot = []
             for record in self:
-                snapshot.append({
-                    'id': record.id,
-                    'display_name': record.display_name,
-                })
+                snapshot.append(
+                    {
+                        'id': record.id,
+                        'display_name': record.display_name,
+                    }
+                )
             for rule in rules:
                 payload = self._rmq_prepare_payload('unlink', self)
                 payload['deleted_records'] = snapshot

@@ -7,9 +7,11 @@ All module settings are accessible via **Settings > RabbitMQ** and stored as `ir
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `odoo_connector_rabbitmq.default_connection_id` | Integer | `1` | ID of the default `rabbitmq.connection` record |
-| `odoo_connector_rabbitmq.publish_enabled` | Boolean | `True` | Enable outbound event publishing |
+| `odoo_connector_rabbitmq.publish_enabled` | Boolean | `True` | Enable outbound event publishing (cron) |
+| `odoo_connector_rabbitmq.global_hook_enabled` | Boolean | `True` | Enable global BaseModel event capture hook |
 | `odoo_connector_rabbitmq.consume_enabled` | Boolean | `True` | Enable inbound message consuming |
 | `odoo_connector_rabbitmq.consumer_interval` | Integer | `2` | Consumer cron interval in minutes |
+| `odoo_connector_rabbitmq.consumer_allow_delete` | Boolean | `False` | Allow Delete action in field mapping consumers |
 | `odoo_connector_rabbitmq.log_retention_days` | Integer | `30` | Days to retain sent/received event logs |
 | `odoo_connector_rabbitmq.max_retries` | Integer | `5` | Maximum retry attempts before dead-lettering |
 
@@ -21,8 +23,10 @@ The `res.config.settings` model exposes these fields:
 |-------|------|-----------------|
 | `rabbitmq_connection_id` | Many2one → `rabbitmq.connection` | `odoo_connector_rabbitmq.default_connection_id` |
 | `rabbitmq_publish_enabled` | Boolean | `odoo_connector_rabbitmq.publish_enabled` |
+| `rabbitmq_global_hook_enabled` | Boolean | `odoo_connector_rabbitmq.global_hook_enabled` |
 | `rabbitmq_consume_enabled` | Boolean | `odoo_connector_rabbitmq.consume_enabled` |
 | `rabbitmq_consumer_interval` | Integer | `odoo_connector_rabbitmq.consumer_interval` |
+| `rabbitmq_consumer_allow_delete` | Boolean | `odoo_connector_rabbitmq.consumer_allow_delete` |
 | `rabbitmq_log_retention_days` | Integer | `odoo_connector_rabbitmq.log_retention_days` |
 | `rabbitmq_max_retries` | Integer | `odoo_connector_rabbitmq.max_retries` |
 

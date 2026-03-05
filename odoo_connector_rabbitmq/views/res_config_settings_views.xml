@@ -17,8 +17,12 @@
                     </block>
                     <block title="Publishing">
                         <setting string="Enable Publishing"
-                                 help="Enable outbound event publishing to RabbitMQ.">
+                                 help="Enable outbound event publishing to RabbitMQ via the cron job.">
                             <field name="rabbitmq_publish_enabled"/>
+                        </setting>
+                        <setting string="Enable Global Hook"
+                                 help="Capture events automatically on all models via Event Rules. When disabled, no events are logged to the outbox regardless of configured rules.">
+                            <field name="rabbitmq_global_hook_enabled"/>
                         </setting>
                     </block>
                     <block title="Consuming">
@@ -31,6 +35,12 @@
                             <field name="rabbitmq_consumer_interval"/>
                         </setting>
                     </block>
+                    <block title="Consumer Safety">
+                        <setting string="Allow Delete via Field Mapping"
+                                 help="When enabled, consumer rules in field mapping mode can use the Delete action. Disabled by default to prevent accidental data deletion.">
+                            <field name="rabbitmq_consumer_allow_delete"/>
+                        </setting>
+                    </block>
                     <block title="Reliability">
                         <setting string="Max Retries"
                                  help="Maximum number of retry attempts for failed events.">
@@ -39,6 +49,20 @@
                         <setting string="Log Retention"
                                  help="Number of days to keep sent/received event logs.">
                             <field name="rabbitmq_log_retention_days"/>
+                        </setting>
+                    </block>
+                    <block title="Connection Tuning">
+                        <setting string="Blocked Connection Timeout"
+                                 help="Timeout in seconds for blocked connections (e.g. when RabbitMQ is under memory alarm).">
+                            <field name="rabbitmq_blocked_connection_timeout"/>
+                        </setting>
+                        <setting string="Connection Attempts"
+                                 help="Number of connection attempts before giving up.">
+                            <field name="rabbitmq_connection_attempts"/>
+                        </setting>
+                        <setting string="Retry Delay"
+                                 help="Delay in seconds between connection retry attempts.">
+                            <field name="rabbitmq_retry_delay"/>
                         </setting>
                     </block>
                 </app>

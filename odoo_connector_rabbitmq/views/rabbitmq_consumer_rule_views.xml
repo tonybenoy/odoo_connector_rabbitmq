@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Tree View -->
+    <!-- List View -->
     <record id="rabbitmq_consumer_rule_view_tree" model="ir.ui.view">
-        <field name="name">rabbitmq.consumer.rule.tree</field>
+        <field name="name">rabbitmq.consumer.rule.list</field>
         <field name="model">rabbitmq.consumer.rule</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="queue_name"/>
                 <field name="exchange_name"/>
                 <field name="routing_key"/>
                 <field name="target_model"/>
-                <field name="target_method"/>
+                <field name="processing_mode"/>
+                <field name="target_method" optional="show"/>
+                <field name="consumer_action" optional="show"/>
                 <field name="prefetch_count"/>
                 <field name="active"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -38,12 +40,43 @@
                         <group string="Processing">
                             <field name="target_model"
                                    placeholder="e.g. res.partner"/>
+                            <field name="processing_mode" widget="radio"/>
                             <field name="target_method"
-                                   placeholder="e.g. _rmq_handle_message"/>
+                                   placeholder="e.g. _rmq_handle_message"
+                                   invisible="processing_mode != 'method'"/>
+                            <field name="consumer_action"
+                                   invisible="processing_mode != 'mapping'"/>
+                            <field name="match_field"
+                                   placeholder="e.g. email"
+                                   invisible="processing_mode != 'mapping' or consumer_action == 'create'"/>
+                            <field name="payload_root"
+                                   placeholder="e.g. data.partner"
+                                   invisible="processing_mode != 'mapping'"/>
                             <field name="prefetch_count"/>
                             <field name="auto_ack"/>
                         </group>
                     </group>
+                    <notebook invisible="processing_mode != 'mapping'">
+                        <page string="Field Mappings" name="mappings">
+                            <field name="mapping_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="source_field"
+                                           placeholder="JSON key (e.g. first_name)"/>
+                                    <field name="target_field"
+                                           placeholder="Odoo field (e.g. name)"/>
+                                    <field name="field_type"/>
+                                    <field name="search_model"
+                                           placeholder="e.g. res.country"
+                                           invisible="field_type != 'many2one_search'"/>
+                                    <field name="search_field"
+                                           placeholder="e.g. code"
+                                           invisible="field_type != 'many2one_search'"/>
+                                    <field name="default_value"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                     <group>
                         <field name="active"/>
                     </group>
@@ -56,7 +89,7 @@
     <record id="rabbitmq_consumer_rule_action" model="ir.actions.act_window">
         <field name="name">Consumer Rules</field>
         <field name="res_model">rabbitmq.consumer.rule</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
 </odoo>

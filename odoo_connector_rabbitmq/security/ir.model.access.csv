@@ -7,3 +7,5 @@ access_rabbitmq_consumer_rule_user,rabbitmq.consumer.rule.user,model_rabbitmq_co
 access_rabbitmq_consumer_rule_manager,rabbitmq.consumer.rule.manager,model_rabbitmq_consumer_rule,group_rabbitmq_manager,1,1,1,1
 access_rabbitmq_event_log_user,rabbitmq.event.log.user,model_rabbitmq_event_log,group_rabbitmq_user,1,0,0,0
 access_rabbitmq_event_log_manager,rabbitmq.event.log.manager,model_rabbitmq_event_log,group_rabbitmq_manager,1,1,1,1
+access_rabbitmq_consumer_field_mapping_user,rabbitmq.consumer.field.mapping.user,model_rabbitmq_consumer_field_mapping,group_rabbitmq_user,1,0,0,0
+access_rabbitmq_consumer_field_mapping_manager,rabbitmq.consumer.field.mapping.manager,model_rabbitmq_consumer_field_mapping,group_rabbitmq_manager,1,1,1,1

@@ -85,20 +85,20 @@ Negative-acknowledges a message with optional requeue.
 
 ## rabbitmq.event.rule
 
-Defines rules for automatic event emission on model lifecycle events.
+Defines rules for automatic event emission on model lifecycle events. Changes to event rules automatically invalidate the global rules cache — new rules take effect immediately without a restart.
 
 ### Fields
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `name` | Char | *required* | Rule name |
-| `model_id` | Many2one → `ir.model` | *required* | Model to watch |
+| `model_id` | Many2one -> `ir.model` | *required* | Model to watch |
 | `model_name` | Char | | Technical model name (related, readonly) |
 | `event_type` | Selection | `create` | `create`, `write`, `unlink`, `state_change`, `custom` |
 | `exchange_name` | Char | `odoo_events` | Target exchange |
 | `exchange_type` | Selection | `topic` | `direct`, `topic`, `fanout` |
 | `routing_key` | Char | | Supports `{model}` and `{event}` placeholders |
-| `field_ids` | Many2many → `ir.model.fields` | | Tracked fields (write events only) |
+| `field_ids` | Many2many -> `ir.model.fields` | | Tracked fields (write events only) |
 | `state_field` | Char | `state` | Field to watch for state transitions |
 | `active` | Boolean | `True` | Active flag |
 
@@ -112,7 +112,7 @@ Resolves routing key placeholders (`{model}`, `{event}`) to actual values.
 
 ## rabbitmq.consumer.rule
 
-Defines rules for consuming messages from RabbitMQ.
+Defines rules for consuming messages from RabbitMQ. Supports two processing modes: **Call Method** (legacy) and **Field Mapping** (zero-code).
 
 ### Fields
 
@@ -123,10 +123,48 @@ Defines rules for consuming messages from RabbitMQ.
 | `exchange_name` | Char | | Exchange name |
 | `routing_key` | Char | | Binding key |
 | `target_model` | Char | *required* | Target Odoo model (e.g., `res.partner`) |
-| `target_method` | Char | *required* | Method to invoke |
+| `processing_mode` | Selection | `method` | `method` (Call Method) or `mapping` (Field Mapping) |
+| `target_method` | Char | | Method to invoke (for Call Method mode) |
+| `consumer_action` | Selection | `create` | `create`, `write`, `upsert`, `unlink` (for Field Mapping mode) |
+| `match_field` | Char | | Odoo field to match existing records (for write/upsert/unlink) |
+| `payload_root` | Char | | Dot-notation path to data in JSON payload |
+| `mapping_ids` | One2many | | Field mappings (for Field Mapping mode) |
 | `prefetch_count` | Integer | `10` | Max messages per batch |
 | `auto_ack` | Boolean | `False` | Auto-acknowledge after processing |
 | `active` | Boolean | `True` | Active flag |
+
+### Constraints
+
+- **Target model must exist** — validated on save
+- **Target method must exist on model** — validated on save (Call Method mode)
+- **Action required** for mapping mode
+- **Match field required** for update/upsert/delete actions
+- **Delete action must be enabled** in Settings > RabbitMQ > Consumer Safety
+
+### Methods
+
+#### `_process_message_mapping(body_str)`
+
+Processes an inbound message using field mappings. Parses JSON, navigates to payload root, converts values per mapping, and performs the configured action (create/write/upsert/unlink).
+
+---
+
+## rabbitmq.consumer.field.mapping
+
+Defines how JSON message fields map to Odoo model fields. Used by consumer rules in Field Mapping mode.
+
+### Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `consumer_rule_id` | Many2one -> `rabbitmq.consumer.rule` | *required* | Parent consumer rule |
+| `sequence` | Integer | `10` | Display order |
+| `source_field` | Char | *required* | JSON key (dot notation supported, e.g. `address.city`) |
+| `target_field` | Char | *required* | Odoo field name |
+| `field_type` | Selection | `char` | `char`, `integer`, `float`, `boolean`, `date`, `datetime`, `many2one_id`, `many2one_search`, `raw` |
+| `search_model` | Char | | Model for many2one_search lookups (e.g. `res.country`) |
+| `search_field` | Char | | Field for many2one_search lookups (e.g. `code`) |
+| `default_value` | Char | | Fallback value if source is missing |
 
 ---
 
@@ -169,7 +207,7 @@ Cron method. Publishes pending outbound events to RabbitMQ with retry logic.
 
 #### `_process_inbound()`
 
-Cron method. Consumes messages from all active consumer rules.
+Cron method. Consumes messages from all active consumer rules. Dispatches to field mapping processor or target method based on the rule's processing mode.
 
 #### `_retry_failed_events()`
 
@@ -181,7 +219,10 @@ Cron method. Deletes sent/received logs older than the configured retention peri
 
 ---
 
-## rabbitmq.event.bus.mixin
+## rabbitmq.event.bus.mixin (Legacy)
+
+!!! note
+    This mixin is kept for backward compatibility. New integrations should use the global hook instead (just create Event Rules in the UI — no code needed). Models using the mixin are automatically skipped by the global hook to prevent double-firing.
 
 Abstract mixin for automatic event capture on model lifecycle.
 

@@ -1,6 +1,6 @@
 {
     'name': 'Odoo Connector RabbitMQ',
-    'version': '17.0.1.0.0',
+    'version': '19.0.1.0.0',
     'category': 'Technical',
     'summary': 'Production-grade event-driven architecture via RabbitMQ',
     'description': """
@@ -30,7 +30,8 @@ Production-grade event-driven architecture with:
         'views/res_config_settings_views.xml',
         'views/menu.xml',
     ],
-    'license': 'LGPL-3',
+    'post_load': 'post_load',
+    'license': 'Other OSI approved licence',
     'installable': True,
     'application': True,
 }

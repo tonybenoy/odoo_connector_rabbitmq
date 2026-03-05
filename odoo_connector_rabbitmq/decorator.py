@@ -27,6 +27,7 @@ def rabbitmq_event(event_name, exchange='odoo_events', routing_key=None):
     an outbound event log entry is created with the return value
     as part of the payload.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -56,23 +57,29 @@ def rabbitmq_event(event_name, exchange='odoo_events', routing_key=None):
                 icp = self.env['ir.config_parameter'].sudo()
                 max_retries = int(icp.get_param('odoo_connector_rabbitmq.max_retries', '5'))
 
-                self.env['rabbitmq.event.log'].sudo().create({
-                    'event_id': payload['event_id'],
-                    'direction': 'outbound',
-                    'model_name': self._name,
-                    'event_type': event_name,
-                    'record_ids': json.dumps(self.ids),
-                    'payload': json.dumps(payload, default=str),
-                    'exchange_name': exchange,
-                    'routing_key': rk,
-                    'state': 'pending',
-                    'max_retries': max_retries,
-                })
+                self.env['rabbitmq.event.log'].sudo().create(
+                    {
+                        'event_id': payload['event_id'],
+                        'direction': 'outbound',
+                        'model_name': self._name,
+                        'event_type': event_name,
+                        'record_ids': json.dumps(self.ids),
+                        'payload': json.dumps(payload, default=str),
+                        'exchange_name': exchange,
+                        'routing_key': rk,
+                        'state': 'pending',
+                        'max_retries': max_retries,
+                    }
+                )
             except Exception as e:
                 _logger.error(
-                    "Failed to log RabbitMQ event %s: %s", event_name, e,
+                    'Failed to log RabbitMQ event %s: %s',
+                    event_name,
+                    e,
                 )
 
             return result
+
         return wrapper
+
     return decorator

@@ -9,8 +9,8 @@ The Odoo Connector RabbitMQ module follows a decoupled, event-driven architectur
 │                        Odoo                             │
 │                                                         │
 │  ┌──────────────┐    ┌──────────────┐                   │
-│  │  Your Model  │    │  Your Model  │                   │
-│  │  + Mixin     │    │  + Decorator │                   │
+│  │  Any Model   │    │  Your Model  │                   │
+│  │ (Global Hook)│    │  + Decorator │                   │
 │  └──────┬───────┘    └──────┬───────┘                   │
 │         │                   │                           │
 │         ▼                   ▼                           │
@@ -39,12 +39,20 @@ The Odoo Connector RabbitMQ module follows a decoupled, event-driven architectur
 
 ### Event Capture Layer
 
-Two mechanisms capture events:
+Three mechanisms capture events:
 
-- **Mixin (`rabbitmq.event.bus.mixin`)** — intercepts `create`, `write`, `unlink` at the ORM level. Configured via Event Rules in the UI.
+- **Global Hook (`post_load`)** — patches `BaseModel.create`, `write`, `unlink` at module load time. Checks a fast in-memory rules cache on every ORM call. Zero overhead for models without rules (~3 dict lookups). Configured via Event Rules in the UI — **no code needed**.
+- **Legacy Mixin (`rabbitmq.event.bus.mixin`)** — intercepts `create`, `write`, `unlink` at the ORM level. Kept for backward compatibility. Models using the mixin are automatically skipped by the global hook.
 - **Decorator (`@rabbitmq_event`)** — wraps any method to emit an event after execution. Configured in code.
 
-Both produce entries in the `rabbitmq.event.log` table with state `pending`.
+All three produce entries in the `rabbitmq.event.log` table with state `pending`.
+
+### Consumer Layer
+
+Two processing modes for consuming messages:
+
+- **Field Mapping (zero-code)** — maps JSON fields to Odoo fields via UI configuration. Supports create, update, upsert, and delete actions with type conversion and many2one lookups.
+- **Call Method (legacy)** — dispatches messages to a Python method on a target model.
 
 ### Outbox Table
 
@@ -77,8 +85,8 @@ Three cron jobs drive the system:
 ### Configuration
 
 - **Connections** — RabbitMQ server details (host, SSL, URI)
-- **Event Rules** — which models/events to capture
-- **Consumer Rules** — which queues to consume and where to route messages
+- **Event Rules** — which models/events to capture (zero code)
+- **Consumer Rules** — which queues to consume and how to process messages (zero code with field mapping)
 - **System Settings** — global toggles and parameters
 
 ## Data Flow
@@ -87,9 +95,9 @@ Three cron jobs drive the system:
 
 ```
 1. User creates/updates/deletes a record
-2. Mixin intercepts the ORM call
-3. Matching event rules are found
-4. Payload is built (standardized JSON)
+2. Global hook intercepts the ORM call
+3. Rules cache is checked (fast dict lookup by model name)
+4. If rules exist: payload is built (standardized JSON)
 5. Event log entry created (state=pending) — same DB transaction
 6. Transaction commits — event is guaranteed persisted
 7. [Cron: 1 min] Picks up pending events (SKIP LOCKED)
@@ -103,12 +111,43 @@ Three cron jobs drive the system:
 1. [Cron: 2 min] Iterates active consumer rules
 2. Consumes batch from each queue (up to prefetch_count)
 3. For each message:
-   a. Calls target_model.target_method(body, properties)
+   Field Mapping mode:
+     a. Parses JSON, navigates to payload root
+     b. Builds vals dict from field mappings
+     c. Performs action (create/write/upsert/unlink)
+   Call Method mode:
+     a. Calls target_model.target_method(body, properties)
    b. On success: ack + log as received
    c. On failure: nack + requeue + log as failed
 ```
 
+## Rules Cache
+
+The global hook maintains an in-memory cache on the registry (`registry._rabbitmq_rules_cache`), structured as:
+
+```python
+{
+    "res.partner": {
+        "create": [{"id": 1, "exchange_name": "odoo_events", ...}],
+        "write": [{"id": 2, ...}],
+    },
+    "sale.order": {
+        "state_change": [{"id": 3, ...}],
+    },
+}
+```
+
+- **Rebuilt lazily** on the first ORM call after invalidation
+- **Invalidated automatically** when Event Rules are created, modified, or deleted, or when Settings are saved
+- **Zero overhead** for models not in the cache (1 attr access + 1 dict `in` check)
+- **Pre-computed frozensets** for tracked field names — set intersection is O(min(n,m)) with no allocation
+- **Disableable** via Settings > RabbitMQ > Enable Global Hook (builds empty cache when disabled)
+
 ## Key Design Decisions
+
+### Why a global hook instead of requiring mixin inheritance?
+
+The mixin approach requires writing Python code for every model. The global hook enables true zero-code configuration — just create Event Rules in the UI and they take effect immediately.
 
 ### Why an outbox instead of direct publishing?
 

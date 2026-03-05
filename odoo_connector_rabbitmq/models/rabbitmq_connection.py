@@ -1,7 +1,7 @@
 import logging
 import ssl as ssl_module
 
-from odoo import api, fields, models, _
+from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ try:
     import pika
 except ImportError:
     pika = None
-    _logger.warning("pika library not found. Please install: pip install pika>=1.3.0")
+    _logger.warning('pika library not found. Please install: pip install pika>=1.3.0')
 
 
 class RabbitMQConnection(models.Model):
@@ -21,8 +21,7 @@ class RabbitMQConnection(models.Model):
     name = fields.Char(string='Name', required=True)
     connection_uri = fields.Char(
         string='Connection URI',
-        help='Full AMQP URI (e.g. amqp://user:pass@host:5672/vhost). '
-             'Overrides individual connection fields when set.',
+        help='Full AMQP URI (e.g. amqp://user:pass@host:5672/vhost). Overrides individual connection fields when set.',
     )
     host = fields.Char(string='Host', default='localhost', required=True)
     port = fields.Integer(string='Port', default=5672, required=True)
@@ -35,9 +34,7 @@ class RabbitMQConnection(models.Model):
     connection_timeout = fields.Integer(string='Connection Timeout (seconds)', default=10)
     active = fields.Boolean(string='Active', default=True)
     state = fields.Selection(
-        [('disconnected', 'Disconnected'),
-         ('connected', 'Connected'),
-         ('error', 'Error')],
+        [('disconnected', 'Disconnected'), ('connected', 'Connected'), ('error', 'Error')],
         string='Status',
         default='disconnected',
         readonly=True,
@@ -48,7 +45,7 @@ class RabbitMQConnection(models.Model):
         """Build pika connection parameters from this record."""
         self.ensure_one()
         if not pika:
-            raise UserError(_("pika library is not installed."))
+            raise UserError(_('pika library is not installed.'))
 
         if self.connection_uri:
             return pika.URLParameters(self.connection_uri)
@@ -61,8 +58,9 @@ class RabbitMQConnection(models.Model):
         if self.ssl_enabled:
             ctx = ssl_module.create_default_context()
             if self.ssl_ca_cert:
-                import tempfile
                 import os
+                import tempfile
+
                 fd, ca_path = tempfile.mkstemp(suffix='.pem')
                 try:
                     os.write(fd, self.ssl_ca_cert)
@@ -73,15 +71,23 @@ class RabbitMQConnection(models.Model):
                         os.unlink(ca_path)
             ssl_options = pika.SSLOptions(ctx, self.host)
 
+        icp = self.env['ir.config_parameter'].sudo()
+        blocked_timeout = int(icp.get_param(
+            'odoo_connector_rabbitmq.blocked_connection_timeout', '300'))
+        conn_attempts = int(icp.get_param(
+            'odoo_connector_rabbitmq.connection_attempts', '3'))
+        retry_delay = int(icp.get_param(
+            'odoo_connector_rabbitmq.retry_delay', '2'))
+
         return pika.ConnectionParameters(
             host=self.host,
             port=self.port,
             virtual_host=self.virtual_host or '/',
             credentials=credentials,
             heartbeat=self.heartbeat or 600,
-            blocked_connection_timeout=300,
-            connection_attempts=3,
-            retry_delay=2,
+            blocked_connection_timeout=blocked_timeout,
+            connection_attempts=conn_attempts,
+            retry_delay=retry_delay,
             socket_timeout=self.connection_timeout or 10,
             ssl_options=ssl_options,
         )
@@ -90,7 +96,7 @@ class RabbitMQConnection(models.Model):
         """Test the RabbitMQ connection and show result notification."""
         self.ensure_one()
         if not pika:
-            raise UserError(_("pika library is not installed."))
+            raise UserError(_('pika library is not installed.'))
 
         try:
             params = self._get_connection_params()
@@ -101,9 +107,8 @@ class RabbitMQConnection(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _("Connection Successful"),
-                    'message': _("Successfully connected to RabbitMQ at %s:%s",
-                                 self.host, self.port),
+                    'title': _('Connection Successful'),
+                    'message': _('Successfully connected to RabbitMQ at %s:%s', self.host, self.port),
                     'type': 'success',
                     'sticky': False,
                 },
@@ -115,7 +120,7 @@ class RabbitMQConnection(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _("Connection Failed"),
+                    'title': _('Connection Failed'),
                     'message': error_msg,
                     'type': 'danger',
                     'sticky': True,

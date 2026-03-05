@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Tree View -->
+    <!-- List View -->
     <record id="rabbitmq_connection_view_tree" model="ir.ui.view">
-        <field name="name">rabbitmq.connection.tree</field>
+        <field name="name">rabbitmq.connection.list</field>
         <field name="model">rabbitmq.connection</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="host"/>
                 <field name="port"/>
@@ -16,7 +16,7 @@
                        decoration-danger="state == 'error'"
                        decoration-muted="state == 'disconnected'" widget="badge"/>
                 <field name="active" column_invisible="True"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -71,7 +71,7 @@
     <record id="rabbitmq_connection_action" model="ir.actions.act_window">
         <field name="name">Connections</field>
         <field name="res_model">rabbitmq.connection</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
 </odoo>

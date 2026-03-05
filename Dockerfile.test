@@ -1,0 +1,5 @@
+ARG ODOO_VERSION=18.0
+FROM odoo:${ODOO_VERSION}
+USER root
+RUN pip3 install --break-system-packages pika>=1.3.0
+USER odoo

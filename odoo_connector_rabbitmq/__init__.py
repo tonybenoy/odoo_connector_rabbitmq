@@ -1,2 +1,2 @@
-from . import models
-from . import decorator
+from . import decorator, models
+from .hooks import post_load

@@ -10,7 +10,7 @@
             <field name="code">model._process_pending_outbound()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">minutes</field>
-            <field name="numbercall">-1</field>
+
             <field name="active">True</field>
             <field name="priority">5</field>
         </record>
@@ -24,7 +24,7 @@
 model._retry_failed_events()</field>
             <field name="interval_number">2</field>
             <field name="interval_type">minutes</field>
-            <field name="numbercall">-1</field>
+
             <field name="active">True</field>
             <field name="priority">5</field>
         </record>
@@ -37,7 +37,7 @@ model._retry_failed_events()</field>
             <field name="code">model._cleanup_old_logs()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
+
             <field name="active">True</field>
             <field name="priority">10</field>
         </record>
