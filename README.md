@@ -29,19 +29,32 @@ Production-grade event-driven architecture for Odoo via RabbitMQ.
 
 ## Quick Start
 
-### 1. Start RabbitMQ
+### 1. Get the addon
+
+Grab just the addon folder for your Odoo version (replace `19.0` with `18.0` or `17.0` as needed):
 
 ```bash
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml up -d
+# Download only the addon directory
+git clone --depth 1 --branch 19.0 https://github.com/tonybenoy/odoo_connector_rabbitmq.git /tmp/odoo_connector_rabbitmq \
+  && cp -r /tmp/odoo_connector_rabbitmq/odoo_connector_rabbitmq /path/to/your/addons/ \
+  && rm -rf /tmp/odoo_connector_rabbitmq
 ```
 
-### 2. Install the module
+### 2. Install dependencies
 
 ```bash
 pip install pika>=1.3.0
 ```
 
-Copy `odoo_connector_rabbitmq/` into your Odoo addons path and install **Odoo Connector RabbitMQ** from the Apps menu.
+### 3. Start RabbitMQ
+
+```bash
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+### 4. Install the module
+
+Install **Odoo Connector RabbitMQ** from the Apps menu.
 
 ### 3. Configure
 
@@ -235,8 +248,7 @@ odoo_connector_rabbitmq/
 ├── decorator.py                         # @rabbitmq_event decorator
 ├── views/                               # UI views and menus
 ├── security/                            # Access control (User / Manager groups)
-├── data/                                # Default connection + cron definitions
-└── docker-compose.yml                   # RabbitMQ container for development
+└── data/                                # Default connection + cron definitions
 ```
 
 ## Security

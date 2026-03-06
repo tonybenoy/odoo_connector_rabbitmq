@@ -16,18 +16,14 @@ pip install pika>=1.3.0
 
 ## Install the Odoo module
 
-### Option 1: Copy to addons path
+### Option 1: Quick download (recommended)
 
-Copy the `odoo_connector_rabbitmq/` directory into your Odoo addons path:
-
-```bash
-cp -r odoo_connector_rabbitmq /path/to/odoo/addons/
-```
-
-Then restart Odoo and update the apps list:
+Grab just the addon folder for your Odoo version (replace `19.0` with `18.0` or `17.0` as needed):
 
 ```bash
-odoo -u base -d your_database
+git clone --depth 1 --branch 19.0 https://github.com/tonybenoy/odoo_connector_rabbitmq.git /tmp/odoo_connector_rabbitmq \
+  && cp -r /tmp/odoo_connector_rabbitmq/odoo_connector_rabbitmq /path/to/odoo/addons/ \
+  && rm -rf /tmp/odoo_connector_rabbitmq
 ```
 
 ### Option 2: Add to addons path config
@@ -57,7 +53,7 @@ ln -s /path/to/odoo-connector-rabbitmq/odoo_connector_rabbitmq /path/to/odoo/add
 The fastest way to get RabbitMQ running locally:
 
 ```bash
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml up -d
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
 
 This starts RabbitMQ with the management UI at [http://localhost:15672](http://localhost:15672) (guest/guest).

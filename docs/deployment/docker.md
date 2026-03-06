@@ -2,10 +2,10 @@
 
 ## Quick Start
 
-The module includes a Docker Compose file for running RabbitMQ locally:
+The easiest way to run RabbitMQ locally:
 
 ```bash
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml up -d
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
 
 This starts:
@@ -13,11 +13,11 @@ This starts:
 - **RabbitMQ** on port `5672` (AMQP)
 - **Management UI** on port `15672` (HTTP)
 
-## Docker Compose Configuration
+## Docker Compose
+
+If you prefer Docker Compose, create a `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
-
 services:
   rabbitmq:
     image: rabbitmq:3-management
@@ -34,6 +34,12 @@ services:
 
 volumes:
   rabbitmq_data:
+```
+
+Then run:
+
+```bash
+docker compose up -d
 ```
 
 ## Management UI
@@ -92,8 +98,8 @@ environment:
 The `rabbitmq_data` volume ensures messages and configuration survive container restarts. To reset RabbitMQ completely:
 
 ```bash
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml down -v
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml up -d
+docker compose down -v
+docker compose up -d
 ```
 
 !!! warning
@@ -104,7 +110,7 @@ docker compose -f odoo_connector_rabbitmq/docker-compose.yml up -d
 Check that RabbitMQ is running:
 
 ```bash
-docker compose -f odoo_connector_rabbitmq/docker-compose.yml ps
+docker ps --filter name=rabbitmq
 ```
 
 Then in Odoo, go to **RabbitMQ > Configuration > Connections** and click **Test Connection** on the default localhost connection.
