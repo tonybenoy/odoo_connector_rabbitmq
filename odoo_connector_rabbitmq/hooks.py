@@ -65,17 +65,19 @@ def _build_rules_cache(env):
             if hasattr(model_obj, '_rmq_get_rules'):
                 continue
 
-        event_type = rule.event_type
-        cache.setdefault(model_name, {}).setdefault(event_type, []).append(
-            {
-                'id': rule.id,
-                'exchange_name': rule.exchange_name,
-                'exchange_type': rule.exchange_type,
-                'routing_key': rule._get_routing_key(),
-                'field_names': frozenset(rule.field_ids.mapped('name')) if rule.field_ids else frozenset(),
-                'state_field': rule.state_field or 'state',
-            }
-        )
+        # Use CRUD checkboxes; falls back to legacy event_type field
+        event_types = rule._get_enabled_event_types()
+        for event_type in event_types:
+            cache.setdefault(model_name, {}).setdefault(event_type, []).append(
+                {
+                    'id': rule.id,
+                    'exchange_name': rule.exchange_name,
+                    'exchange_type': rule.exchange_type,
+                    'routing_key': rule._get_routing_key(event_type=event_type),
+                    'field_names': frozenset(rule.field_ids.mapped('name')) if rule.field_ids else frozenset(),
+                    'state_field': rule.state_field or 'state',
+                }
+            )
     env.registry._rabbitmq_rules_cache = cache
     return cache
 

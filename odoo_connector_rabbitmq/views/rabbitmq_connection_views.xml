@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Tree View -->
+    <!-- List View -->
     <record id="rabbitmq_connection_view_tree" model="ir.ui.view">
         <field name="name">rabbitmq.connection.tree</field>
         <field name="model">rabbitmq.connection</field>
@@ -11,12 +11,43 @@
                 <field name="host"/>
                 <field name="port"/>
                 <field name="virtual_host"/>
-                <field name="ssl_enabled"/>
+                <field name="ssl_enabled" string="SSL"/>
                 <field name="state" decoration-success="state == 'connected'"
                        decoration-danger="state == 'error'"
                        decoration-muted="state == 'disconnected'" widget="badge"/>
                 <field name="active" column_invisible="True"/>
             </tree>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="rabbitmq_connection_view_kanban" model="ir.ui.view">
+        <field name="name">rabbitmq.connection.kanban</field>
+        <field name="model">rabbitmq.connection</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong><field name="name"/></strong>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'connected'"
+                                   decoration-danger="state == 'error'"
+                                   decoration-muted="state == 'disconnected'"/>
+                        </div>
+                        <div class="text-muted">
+                            <field name="host"/>:<field name="port"/>
+                        </div>
+                        <div class="text-muted" t-if="record.virtual_host.raw_value != '/'">
+                            vhost: <field name="virtual_host"/>
+                        </div>
+                        <div class="d-flex gap-1 mt-1">
+                            <span t-if="record.ssl_enabled.raw_value"
+                                  class="badge text-bg-info">SSL</span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
@@ -34,21 +65,41 @@
                            statusbar_visible="disconnected,connected"/>
                 </header>
                 <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_rules" type="object"
+                                class="oe_stat_button" icon="fa-cogs">
+                            <field name="rule_count" string="Rules"
+                                   widget="statinfo"/>
+                        </button>
+                        <button name="action_view_events" type="object"
+                                class="oe_stat_button" icon="fa-envelope">
+                            <field name="event_count" string="Events"
+                                   widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="Connection Name"/></h1>
+                        <h1><field name="name" placeholder="e.g. Production RabbitMQ"/></h1>
+                    </div>
+                    <div class="alert alert-info mb-3" role="alert">
+                        Use a <strong>Connection URI</strong> for quick setup, or fill in the individual fields below.
+                        The URI takes precedence when set.
                     </div>
                     <group>
-                        <group string="Connection URI">
-                            <field name="connection_uri" placeholder="amqp://user:pass@host:5672/vhost"/>
+                        <group string="Quick Connect">
+                            <field name="connection_uri"
+                                   placeholder="amqp://user:pass@host:5672/vhost"
+                                   string="Connection URI"/>
                         </group>
                     </group>
                     <group>
                         <group string="Connection Details">
-                            <field name="host"/>
+                            <field name="host" placeholder="localhost"/>
                             <field name="port"/>
-                            <field name="username"/>
+                            <field name="username" placeholder="guest"/>
                             <field name="password" password="True"/>
-                            <field name="virtual_host"/>
+                            <field name="virtual_host" placeholder="/"/>
                         </group>
                         <group string="Advanced">
                             <field name="heartbeat"/>
@@ -56,14 +107,39 @@
                             <field name="ssl_enabled"/>
                             <field name="ssl_ca_cert" invisible="not ssl_enabled"
                                    filename="ssl_ca_cert_filename"/>
-                            <field name="active"/>
                         </group>
                     </group>
-                    <group string="Status" invisible="not last_error">
-                        <field name="last_error" readonly="True"/>
+                    <group string="Last Error" invisible="not last_error">
+                        <field name="last_error" readonly="True" nolabel="True"
+                               colspan="2"/>
                     </group>
+                    <field name="active" invisible="True"/>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="rabbitmq_connection_view_search" model="ir.ui.view">
+        <field name="name">rabbitmq.connection.search</field>
+        <field name="model">rabbitmq.connection</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="host"/>
+                <separator/>
+                <filter name="filter_connected" string="Connected"
+                        domain="[('state', '=', 'connected')]"/>
+                <filter name="filter_disconnected" string="Disconnected"
+                        domain="[('state', '=', 'disconnected')]"/>
+                <filter name="filter_error" string="Error"
+                        domain="[('state', '=', 'error')]"/>
+                <separator/>
+                <filter name="filter_ssl" string="SSL Enabled"
+                        domain="[('ssl_enabled', '=', True)]"/>
+                <filter name="filter_inactive" string="Archived"
+                        domain="[('active', '=', False)]"/>
+            </search>
         </field>
     </record>
 
@@ -71,7 +147,16 @@
     <record id="rabbitmq_connection_action" model="ir.actions.act_window">
         <field name="name">Connections</field>
         <field name="res_model">rabbitmq.connection</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first RabbitMQ connection
+            </p>
+            <p>
+                Configure the hostname, port, and credentials for your RabbitMQ
+                server, then click <strong>Test Connection</strong> to verify.
+            </p>
+        </field>
     </record>
 
 </odoo>

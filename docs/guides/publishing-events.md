@@ -8,9 +8,11 @@ No Python code needed. The module patches `BaseModel.create`, `write`, and `unli
 
 1. Go to **RabbitMQ > Configuration > Event Rules > Create**
 2. Select the **Model** (e.g. `res.partner`)
-3. Choose the **Event Type**
+3. Check which operations to track: **On Create**, **On Update**, **On Delete**, **On State Change**
 4. Set the **Exchange** and **Routing Key**
 5. Save — events start firing immediately, no restart needed
+
+A single rule can track multiple operations. For example, checking Create + Update + Delete on `res.partner` replaces what previously required three separate rules.
 
 ### How it works
 

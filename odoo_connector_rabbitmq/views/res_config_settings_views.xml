@@ -9,62 +9,66 @@
             <xpath expr="//form" position="inside">
                 <app data-string="RabbitMQ" string="RabbitMQ"
                      data-key="odoo_connector_rabbitmq">
+
                     <block title="Connection">
                         <setting string="Default Connection"
-                                 help="Select the default RabbitMQ connection to use.">
+                                 help="All publishing and consuming uses this connection. Set up connections under Configuration > Connections.">
                             <field name="rabbitmq_connection_id"/>
                         </setting>
                     </block>
+
                     <block title="Publishing">
                         <setting string="Enable Publishing"
-                                 help="Enable outbound event publishing to RabbitMQ via the cron job.">
+                                 help="Publish outbound events to RabbitMQ via the scheduled cron job. When disabled, events still accumulate in the outbox but are not sent.">
                             <field name="rabbitmq_publish_enabled"/>
                         </setting>
                         <setting string="Enable Global Hook"
-                                 help="Capture events automatically on all models via Event Rules. When disabled, no events are logged to the outbox regardless of configured rules.">
+                                 help="Automatically capture create/update/delete operations on models with Event Rules. When disabled, no new events are logged regardless of configured rules.">
                             <field name="rabbitmq_global_hook_enabled"/>
                         </setting>
                     </block>
+
                     <block title="Consuming">
                         <setting string="Enable Consuming"
-                                 help="Enable inbound message consuming from RabbitMQ.">
+                                 help="Process inbound messages from RabbitMQ queues using Consumer Rules.">
                             <field name="rabbitmq_consume_enabled"/>
                         </setting>
-                        <setting string="Consumer Interval"
-                                 help="Interval in minutes between consumer cron runs.">
+                        <setting string="Consumer Interval (minutes)"
+                                 help="How often the consumer cron job runs. Lower values mean faster message processing but more load.">
                             <field name="rabbitmq_consumer_interval"/>
                         </setting>
                     </block>
-                    <block title="Consumer Safety">
+
+                    <block title="Safety">
                         <setting string="Allow Delete via Field Mapping"
-                                 help="When enabled, consumer rules in field mapping mode can use the Delete action. Disabled by default to prevent accidental data deletion.">
+                                 help="When enabled, consumer rules in Field Mapping mode can delete records. Keep disabled to prevent accidental data loss from inbound messages.">
                             <field name="rabbitmq_consumer_allow_delete"/>
                         </setting>
-                    </block>
-                    <block title="Reliability">
                         <setting string="Max Retries"
-                                 help="Maximum number of retry attempts for failed events.">
+                                 help="How many times a failed event is retried before being marked as dead. Uses exponential backoff (2, 4, 8, 16, 32 minutes).">
                             <field name="rabbitmq_max_retries"/>
                         </setting>
-                        <setting string="Log Retention"
-                                 help="Number of days to keep sent/received event logs.">
+                        <setting string="Log Retention (days)"
+                                 help="Sent and received event logs older than this are automatically cleaned up.">
                             <field name="rabbitmq_log_retention_days"/>
                         </setting>
                     </block>
+
                     <block title="Connection Tuning">
-                        <setting string="Blocked Connection Timeout"
-                                 help="Timeout in seconds for blocked connections (e.g. when RabbitMQ is under memory alarm).">
+                        <setting string="Blocked Connection Timeout (seconds)"
+                                 help="How long to wait when RabbitMQ blocks the connection (e.g. memory alarm). 0 = wait forever.">
                             <field name="rabbitmq_blocked_connection_timeout"/>
                         </setting>
                         <setting string="Connection Attempts"
-                                 help="Number of connection attempts before giving up.">
+                                 help="Number of times to retry connecting before giving up.">
                             <field name="rabbitmq_connection_attempts"/>
                         </setting>
-                        <setting string="Retry Delay"
-                                 help="Delay in seconds between connection retry attempts.">
+                        <setting string="Retry Delay (seconds)"
+                                 help="Wait time between connection retry attempts.">
                             <field name="rabbitmq_retry_delay"/>
                         </setting>
                     </block>
+
                 </app>
             </xpath>
         </field>

@@ -94,19 +94,30 @@ Defines rules for automatic event emission on model lifecycle events. Changes to
 | `name` | Char | *required* | Rule name |
 | `model_id` | Many2one -> `ir.model` | *required* | Model to watch |
 | `model_name` | Char | | Technical model name (related, readonly) |
-| `event_type` | Selection | `create` | `create`, `write`, `unlink`, `state_change`, `custom` |
+| `on_create` | Boolean | `True` | Emit event on record creation |
+| `on_write` | Boolean | `False` | Emit event on record update |
+| `on_unlink` | Boolean | `False` | Emit event on record deletion |
+| `on_state_change` | Boolean | `False` | Emit event on state field transition |
+| `event_type` | Selection | | Legacy field (hidden). Kept for backward compatibility |
 | `exchange_name` | Char | `odoo_events` | Target exchange |
 | `exchange_type` | Selection | `topic` | `direct`, `topic`, `fanout` |
 | `routing_key` | Char | | Supports `{model}` and `{event}` placeholders |
 | `field_ids` | Many2many -> `ir.model.fields` | | Tracked fields (write events only) |
 | `state_field` | Char | `state` | Field to watch for state transitions |
 | `active` | Boolean | `True` | Active flag |
+| `event_count` | Integer | | Number of related event log entries (computed) |
+
+A single rule can track multiple operations. For example, enabling On Create + On Update + On Delete captures all CRUD events for a model in one rule.
 
 ### Methods
 
-#### `_get_routing_key()`
+#### `_get_routing_key(event_type=None)`
 
-Resolves routing key placeholders (`{model}`, `{event}`) to actual values.
+Resolves routing key placeholders (`{model}`, `{event}`) to actual values. When a rule tracks multiple event types, the `{event}` placeholder resolves per event type.
+
+#### `_get_enabled_event_types()`
+
+Returns a list of event type strings enabled via the CRUD checkboxes. Falls back to the legacy `event_type` field if no checkboxes are set.
 
 ---
 

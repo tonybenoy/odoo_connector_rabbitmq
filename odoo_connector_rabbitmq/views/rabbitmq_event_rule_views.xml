@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Tree View -->
+    <!-- List View -->
     <record id="rabbitmq_event_rule_view_tree" model="ir.ui.view">
         <field name="name">rabbitmq.event.rule.tree</field>
         <field name="model">rabbitmq.event.rule</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
-                <field name="model_name"/>
-                <field name="event_type"/>
-                <field name="exchange_name"/>
+                <field name="model_name" string="Model"/>
+                <field name="on_create" string="Create" widget="boolean"/>
+                <field name="on_write" string="Update" widget="boolean"/>
+                <field name="on_unlink" string="Delete" widget="boolean"/>
+                <field name="on_state_change" string="State" widget="boolean"/>
+                <field name="exchange_name" optional="hide"/>
                 <field name="routing_key"/>
-                <field name="active"/>
+                <field name="active" column_invisible="True"/>
             </tree>
         </field>
     </record>
@@ -24,20 +27,22 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_events" type="object"
+                                class="oe_stat_button" icon="fa-envelope">
+                            <field name="event_count" string="Events"
+                                   widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="Rule Name"/></h1>
+                        <h1><field name="name" placeholder="e.g. Partner CRUD Events"/></h1>
                     </div>
                     <group>
-                        <group string="Event Trigger">
-                            <field name="model_id"/>
+                        <group string="Model">
+                            <field name="model_id" string="Watch Model"/>
                             <field name="model_name" invisible="True"/>
-                            <field name="event_type"/>
-                            <field name="field_ids"
-                                   invisible="event_type not in ('write',)"
-                                   domain="[('model_id', '=', model_id)]"
-                                   widget="many2many_tags"/>
-                            <field name="state_field"
-                                   invisible="event_type != 'state_change'"/>
                         </group>
                         <group string="RabbitMQ Target">
                             <field name="exchange_name"/>
@@ -46,11 +51,61 @@
                                    placeholder="odoo.{model}.{event}"/>
                         </group>
                     </group>
-                    <group>
-                        <field name="active"/>
+                    <separator string="Events to Capture"/>
+                    <group col="4">
+                        <field name="on_create"/>
+                        <field name="on_write"/>
+                        <field name="on_unlink"/>
+                        <field name="on_state_change"/>
                     </group>
+                    <group invisible="not on_write" string="Update Options">
+                        <field name="field_ids"
+                               string="Tracked Fields"
+                               domain="[('model_id', '=', model_id)]"
+                               widget="many2many_tags"
+                               placeholder="Leave empty to track all fields"/>
+                    </group>
+                    <group invisible="not on_state_change" string="State Change Options">
+                        <field name="state_field"
+                               placeholder="state"/>
+                    </group>
+                    <field name="active" invisible="True"/>
+                    <!-- Legacy field kept for backward compat -->
+                    <field name="event_type" invisible="True"/>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="rabbitmq_event_rule_view_search" model="ir.ui.view">
+        <field name="name">rabbitmq.event.rule.search</field>
+        <field name="model">rabbitmq.event.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="model_name"/>
+                <field name="exchange_name"/>
+                <separator/>
+                <filter name="filter_create" string="Create"
+                        domain="[('on_create', '=', True)]"/>
+                <filter name="filter_write" string="Update"
+                        domain="[('on_write', '=', True)]"/>
+                <filter name="filter_unlink" string="Delete"
+                        domain="[('on_unlink', '=', True)]"/>
+                <filter name="filter_state_change" string="State Change"
+                        domain="[('on_state_change', '=', True)]"/>
+                <separator/>
+                <filter name="filter_inactive" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="group_model" string="Model"
+                            context="{'group_by': 'model_name'}"/>
+                    <filter name="group_exchange" string="Exchange"
+                            context="{'group_by': 'exchange_name'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -59,6 +114,15 @@
         <field name="name">Event Rules</field>
         <field name="res_model">rabbitmq.event.rule</field>
         <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first event rule
+            </p>
+            <p>
+                Event rules capture model operations (create, update, delete) and
+                publish them to RabbitMQ automatically. No Python code needed.
+            </p>
+        </field>
     </record>
 
 </odoo>

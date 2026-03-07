@@ -22,9 +22,9 @@ class RabbitMQConsumerRule(models.Model):
         help='Odoo model technical name (e.g. res.partner).',
     )
     processing_mode = fields.Selection(
-        [('method', 'Call Method'), ('mapping', 'Field Mapping')],
+        [('mapping', 'Field Mapping (zero-code)'), ('method', 'Call Method')],
         string='Processing Mode',
-        default='method',
+        default='mapping',
         required=True,
     )
     target_method = fields.Char(
@@ -64,6 +64,30 @@ class RabbitMQConsumerRule(models.Model):
         help='Automatically acknowledge messages after processing.',
     )
     active = fields.Boolean(string='Active', default=True)
+
+    # --- Computed counts ---
+    event_count = fields.Integer(string='Events', compute='_compute_event_count')
+
+    def _compute_event_count(self):
+        log_model = self.env['rabbitmq.event.log'].sudo()
+        for rule in self:
+            domain = [('direction', '=', 'inbound')]
+            if rule.queue_name:
+                domain.append(('queue_name', '=', rule.queue_name))
+            rule.event_count = log_model.search_count(domain)
+
+    def action_view_events(self):
+        self.ensure_one()
+        domain = [('direction', '=', 'inbound')]
+        if self.queue_name:
+            domain.append(('queue_name', '=', self.queue_name))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Event Logs',
+            'res_model': 'rabbitmq.event.log',
+            'view_mode': 'list,form',
+            'domain': domain,
+        }
 
     # ------------------------------------------------------------------
     # Constraints
