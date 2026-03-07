@@ -6,6 +6,8 @@ repo_name: tonybenoy/odoo_connector_rabbitmq
 
 theme:
   name: material
+  logo: assets/icon.png
+  favicon: assets/icon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

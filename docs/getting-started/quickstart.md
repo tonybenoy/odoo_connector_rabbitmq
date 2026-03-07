@@ -1,6 +1,6 @@
 # Quick Start
 
-This guide walks you through publishing your first event and consuming it — end to end.
+This guide walks you through publishing your first event and consuming it — end to end, with zero code.
 
 ## Prerequisites
 
@@ -8,17 +8,21 @@ This guide walks you through publishing your first event and consuming it — en
 - RabbitMQ running (see [Docker setup](../deployment/docker.md))
 - Connection verified via **Test Connection** in the UI
 
-## Step 1: Create a publisher
+## Step 1: Create a connection
 
-Add the mixin to a model you want to track. In a custom module:
+Go to **RabbitMQ > Configuration > Connections** and create:
 
-```python
-from odoo import models
+| Field | Value |
+|-------|-------|
+| Name | `Local RabbitMQ` |
+| Host | `rabbitmq` (or `localhost`) |
+| Port | `5672` |
+| Username | `guest` |
+| Password | `guest` |
 
-class ResPartner(models.Model):
-    _name = 'res.partner'
-    _inherit = ['res.partner', 'rabbitmq.event.bus.mixin']
-```
+Click **Test Connection** to verify.
+
+Then go to **RabbitMQ > Configuration > Settings** and set it as the **Default Connection**.
 
 ## Step 2: Create an event rule
 
@@ -26,58 +30,48 @@ Go to **RabbitMQ > Configuration > Event Rules** and create a new rule:
 
 | Field | Value |
 |-------|-------|
-| Name | Partner Created |
+| Name | `Partner Events` |
 | Model | `res.partner` |
-| Event Type | `create` |
+| On Create | checked |
+| On Update | checked |
+| On Delete | checked |
 | Exchange | `odoo_events` |
 | Exchange Type | `topic` |
-| Routing Key | `partner.created` |
+| Routing Key | `odoo.{model}.{event}` |
 
-## Step 3: Create a consumer
+That's it — no Python code needed. The global hook will automatically capture create, update, and delete operations on `res.partner`.
 
-In your custom module, create a model to handle incoming messages:
+!!! tip
+    Use `{model}` and `{event}` placeholders in routing keys. They resolve to values like `odoo.res.partner.create`, `odoo.res.partner.write`, etc.
 
-```python
-import json
-import logging
-from odoo import models
-
-_logger = logging.getLogger(__name__)
-
-class PartnerConsumer(models.Model):
-    _name = 'partner.consumer'
-    _description = 'Partner Event Consumer'
-
-    def process_partner_event(self, body, properties):
-        data = json.loads(body)
-        _logger.info(
-            "New partner created: IDs=%s, by user=%s",
-            data['record_ids'],
-            data['user_login'],
-        )
-```
-
-## Step 4: Create a consumer rule
+## Step 3: Create a consumer rule (zero-code)
 
 Go to **RabbitMQ > Configuration > Consumer Rules** and create:
 
 | Field | Value |
 |-------|-------|
-| Name | Partner Event Consumer |
+| Name | `Sync Partner Notes` |
 | Queue | `partner_events` |
 | Exchange | `odoo_events` |
-| Routing Key | `partner.created` |
-| Target Model | `partner.consumer` |
-| Target Method | `process_partner_event` |
-| Prefetch Count | `10` |
+| Routing Key | `odoo.res.partner.create` |
+| Target Model | `res.partner` |
+| Processing Mode | **Field Mapping** |
+| Action | **Create** |
 
-## Step 5: Test it
+Then add field mappings:
+
+| Source Field (JSON) | Target Field (Odoo) | Type |
+|---------------------|---------------------|------|
+| `values.name` | `name` | Text |
+| `values.email` | `email` | Text |
+| `values.phone` | `phone` | Text |
+
+## Step 4: Test it
 
 1. Create a new contact in Odoo
 2. Go to **RabbitMQ > Dashboard** — you should see a new outbound event with state **Pending**
 3. Wait for the outbound cron (runs every 1 minute) — the event state changes to **Sent**
 4. Wait for the inbound cron (runs every 2 minutes) — an inbound event appears with state **Received**
-5. Check your Odoo logs for the consumer output
 
 !!! tip
     You can trigger cron jobs manually from **Settings > Technical > Automation > Scheduled Actions** to skip the wait.
@@ -105,6 +99,6 @@ The published event looks like this:
 
 ## Next steps
 
-- [Publishing Events](../guides/publishing-events.md) — mixin and decorator approaches
-- [Consuming Messages](../guides/consuming-messages.md) — consumer rules and target methods
-- [Retry & Dead Letter](../guides/retry-and-dead-letter.md) — error handling
+- [Publishing Events](../guides/publishing-events.md) — advanced publishing with field tracking, state changes, and the `@rabbitmq_event` decorator
+- [Consuming Messages](../guides/consuming-messages.md) — field mapping types, match fields, and the Call Method mode
+- [Retry & Dead Letter](../guides/retry-and-dead-letter.md) — error handling and monitoring

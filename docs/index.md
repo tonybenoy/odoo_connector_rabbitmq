@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" alt="Odoo Connector RabbitMQ" width="128" height="128">
+</p>
+
 # Odoo Connector RabbitMQ
 
 Production-grade event-driven architecture for Odoo 18.0 via RabbitMQ.

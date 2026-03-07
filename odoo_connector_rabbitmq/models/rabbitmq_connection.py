@@ -41,6 +41,36 @@ class RabbitMQConnection(models.Model):
     )
     last_error = fields.Text(string='Last Error', readonly=True)
 
+    # --- Computed counts ---
+    rule_count = fields.Integer(string='Event Rules', compute='_compute_counts')
+    event_count = fields.Integer(string='Events', compute='_compute_counts')
+
+    def _compute_counts(self):
+        for conn in self:
+            conn.rule_count = self.env['rabbitmq.event.rule'].sudo().search_count([
+                ('active', '=', True),
+            ])
+            conn.event_count = self.env['rabbitmq.event.log'].sudo().search_count([
+                ('direction', '=', 'outbound'),
+            ])
+
+    def action_view_rules(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Event Rules',
+            'res_model': 'rabbitmq.event.rule',
+            'view_mode': 'list,form',
+        }
+
+    def action_view_events(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Event Logs',
+            'res_model': 'rabbitmq.event.log',
+            'view_mode': 'list,form',
+            'domain': [('direction', '=', 'outbound')],
+        }
+
     def _get_connection_params(self):
         """Build pika connection parameters from this record."""
         self.ensure_one()

@@ -11,18 +11,21 @@
                   decoration-warning="state == 'pending'"
                   default_order="create_date desc">
                 <field name="create_date" string="Date"/>
-                <field name="event_id"/>
-                <field name="direction"/>
-                <field name="model_name"/>
-                <field name="event_type"/>
-                <field name="exchange_name"/>
-                <field name="routing_key"/>
+                <field name="direction" widget="badge"
+                       decoration-info="direction == 'outbound'"
+                       decoration-success="direction == 'inbound'"/>
+                <field name="model_name" string="Model"/>
+                <field name="event_type" string="Event"/>
                 <field name="state" widget="badge"
                        decoration-success="state in ('sent', 'received')"
                        decoration-danger="state in ('failed', 'dead')"
                        decoration-warning="state == 'pending'"/>
-                <field name="retry_count"/>
-                <field name="next_retry_at"/>
+                <field name="routing_key"/>
+                <field name="retry_count" string="Retries" optional="show"/>
+                <field name="event_id" optional="hide"/>
+                <field name="exchange_name" optional="hide"/>
+                <field name="next_retry_at" optional="hide"/>
+                <field name="error_message" string="Error" optional="hide"/>
             </list>
         </field>
     </record>
@@ -43,13 +46,13 @@
                 </header>
                 <sheet>
                     <group>
-                        <group string="Event Info">
-                            <field name="event_id"/>
+                        <group string="Event">
+                            <field name="event_id" string="ID"/>
                             <field name="direction"/>
-                            <field name="model_name"/>
-                            <field name="event_type"/>
+                            <field name="model_name" string="Model"/>
+                            <field name="event_type" string="Event"/>
                             <field name="record_ids"/>
-                            <field name="create_date"/>
+                            <field name="create_date" string="Created"/>
                         </group>
                         <group string="Routing">
                             <field name="exchange_name"/>
@@ -57,17 +60,24 @@
                             <field name="queue_name"/>
                         </group>
                     </group>
-                    <group string="Retry Info"
+                    <group string="Error Details"
                            invisible="state not in ('failed', 'dead')">
-                        <field name="retry_count"/>
-                        <field name="max_retries"/>
-                        <field name="next_retry_at"/>
-                        <field name="error_message"/>
+                        <group>
+                            <field name="retry_count"/>
+                            <field name="max_retries"/>
+                            <field name="next_retry_at"/>
+                        </group>
+                        <group>
+                            <field name="error_message" nolabel="True"
+                                   colspan="2"/>
+                        </group>
                     </group>
-                    <group string="Payload">
-                        <field name="payload" widget="text" nolabel="True"
-                               colspan="2"/>
-                    </group>
+                    <notebook>
+                        <page string="Payload" name="payload">
+                            <field name="payload" widget="code" nolabel="True"
+                                   readonly="True"/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -80,7 +90,7 @@
         <field name="arch" type="xml">
             <search>
                 <field name="event_id"/>
-                <field name="model_name"/>
+                <field name="model_name" string="Model"/>
                 <field name="event_type"/>
                 <field name="exchange_name"/>
                 <field name="routing_key"/>
@@ -120,15 +130,66 @@
         <field name="name">Event Log</field>
         <field name="res_model">rabbitmq.event.log</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_filter_pending': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No events yet
+            </p>
+            <p>
+                Events appear here when your Event Rules capture model operations
+                or when Consumer Rules process inbound messages.
+            </p>
+        </field>
     </record>
 
-    <!-- Dashboard Action (filtered to show overview) -->
+    <!-- Dashboard List View (with Retry All Dead button) -->
+    <record id="rabbitmq_event_log_dashboard_tree" model="ir.ui.view">
+        <field name="name">rabbitmq.event.log.dashboard.list</field>
+        <field name="model">rabbitmq.event.log</field>
+        <field name="arch" type="xml">
+            <list decoration-success="state in ('sent', 'received')"
+                  decoration-danger="state in ('failed', 'dead')"
+                  decoration-warning="state == 'pending'"
+                  default_order="create_date desc">
+                <header>
+                    <button name="action_retry_all_dead"
+                            string="Retry All Dead"
+                            type="object"
+                            class="btn-secondary"
+                            groups="odoo_connector_rabbitmq.group_rabbitmq_manager"/>
+                </header>
+                <field name="create_date" string="Date"/>
+                <field name="direction" widget="badge"
+                       decoration-info="direction == 'outbound'"
+                       decoration-success="direction == 'inbound'"/>
+                <field name="model_name" string="Model"/>
+                <field name="event_type" string="Event"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('sent', 'received')"
+                       decoration-danger="state in ('failed', 'dead')"
+                       decoration-warning="state == 'pending'"/>
+                <field name="routing_key"/>
+                <field name="retry_count" string="Retries" optional="show"/>
+                <field name="error_message" string="Error" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Dashboard Action -->
     <record id="rabbitmq_event_log_dashboard_action" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
         <field name="res_model">rabbitmq.event.log</field>
         <field name="view_mode">list,form</field>
+        <field name="view_id" ref="rabbitmq_event_log_dashboard_tree"/>
         <field name="context">{'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Your RabbitMQ dashboard is empty
+            </p>
+            <p>
+                Start by creating a <strong>Connection</strong>, then set up
+                <strong>Event Rules</strong> to capture model changes.
+            </p>
+        </field>
     </record>
 
 </odoo>
