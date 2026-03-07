@@ -24,14 +24,18 @@ class TestRulesCache(TransactionCase):
             'odoo_connector_rabbitmq.global_hook_enabled', 'True',
         )
 
-    def _create_rule(self, event_type='create', model_id=None, **kwargs):
+    def _create_rule(self, on_create=False, on_write=False, on_unlink=False,
+                     on_state_change=False, model_id=None, **kwargs):
         vals = {
-            'name': f'Test {event_type}',
+            'name': 'Test Rule',
             'model_id': model_id or self.partner_model.id,
-            'event_type': event_type,
+            'on_create': on_create,
+            'on_write': on_write,
+            'on_unlink': on_unlink,
+            'on_state_change': on_state_change,
             'exchange_name': 'test_ex',
             'exchange_type': 'topic',
-            'routing_key': f'test.partner.{event_type}',
+            'routing_key': 'test.partner.{event}',
         }
         vals.update(kwargs)
         return self.env['rabbitmq.event.rule'].create(vals)
@@ -44,7 +48,7 @@ class TestRulesCache(TransactionCase):
         self.assertEqual(cache, {})
 
     def test_build_cache_with_rule(self):
-        self._create_rule('create')
+        self._create_rule(on_create=True)
         _invalidate_rules_cache(self.env.registry)
         cache = _build_rules_cache(self.env)
         self.assertIn('res.partner', cache)
@@ -53,13 +57,27 @@ class TestRulesCache(TransactionCase):
         self.assertEqual(rule_data['exchange_name'], 'test_ex')
         self.assertEqual(rule_data['routing_key'], 'test.partner.create')
 
+    def test_build_cache_multi_event_rule(self):
+        """A rule with multiple checkboxes should appear in multiple buckets."""
+        self._create_rule(on_create=True, on_write=True, on_unlink=True)
+        _invalidate_rules_cache(self.env.registry)
+        cache = _build_rules_cache(self.env)
+        partner_cache = cache.get('res.partner', {})
+        self.assertIn('create', partner_cache)
+        self.assertIn('write', partner_cache)
+        self.assertIn('unlink', partner_cache)
+        # Routing key should resolve per event type
+        self.assertEqual(partner_cache['create'][0]['routing_key'], 'test.partner.create')
+        self.assertEqual(partner_cache['write'][0]['routing_key'], 'test.partner.write')
+        self.assertEqual(partner_cache['unlink'][0]['routing_key'], 'test.partner.unlink')
+
     def test_cache_skips_internal_models(self):
         """Models in _SKIP_MODELS should never appear in cache."""
         log_model = self.env['ir.model'].search(
             [('model', '=', 'rabbitmq.event.log')], limit=1,
         )
         if log_model:
-            self._create_rule('create', model_id=log_model.id)
+            self._create_rule(on_create=True, model_id=log_model.id)
             _invalidate_rules_cache(self.env.registry)
             cache = _build_rules_cache(self.env)
             self.assertNotIn('rabbitmq.event.log', cache)
@@ -91,7 +109,7 @@ class TestRulesCache(TransactionCase):
             [('model', '=', 'res.partner'), ('name', '=', 'phone')],
             limit=1,
         )
-        self._create_rule('write', field_ids=[(6, 0, field_obj.ids)])
+        self._create_rule(on_write=True, field_ids=[(6, 0, field_obj.ids)])
         _invalidate_rules_cache(self.env.registry)
         cache = _build_rules_cache(self.env)
         rule_data = cache['res.partner']['write'][0]
@@ -138,14 +156,18 @@ class TestGlobalHookEvents(TransactionCase):
         self.env['rabbitmq.event.rule'].sudo().search([]).unlink()
         _invalidate_rules_cache(self.env.registry)
 
-    def _create_rule(self, event_type):
+    def _create_rule(self, on_create=False, on_write=False, on_unlink=False,
+                     on_state_change=False):
         return self.env['rabbitmq.event.rule'].create({
-            'name': f'Test {event_type}',
+            'name': 'Test Rule',
             'model_id': self.partner_model.id,
-            'event_type': event_type,
+            'on_create': on_create,
+            'on_write': on_write,
+            'on_unlink': on_unlink,
+            'on_state_change': on_state_change,
             'exchange_name': 'odoo_events',
             'exchange_type': 'topic',
-            'routing_key': f'res.partner.{event_type}',
+            'routing_key': 'res.partner.{event}',
         })
 
     def _get_logs(self, event_type):
@@ -156,7 +178,7 @@ class TestGlobalHookEvents(TransactionCase):
 
     def test_create_event(self):
         """Creating a partner with a create rule should produce an event log."""
-        self._create_rule('create')
+        self._create_rule(on_create=True)
         partner = self.env['res.partner'].create({'name': 'Hook Test'})
         logs = self._get_logs('create')
         self.assertTrue(logs)
@@ -169,7 +191,7 @@ class TestGlobalHookEvents(TransactionCase):
     def test_write_event(self):
         """Updating a partner with a write rule should produce an event log."""
         partner = self.env['res.partner'].create({'name': 'Before'})
-        self._create_rule('write')
+        self._create_rule(on_write=True)
         partner.write({'name': 'After'})
         logs = self._get_logs('write')
         self.assertTrue(logs)
@@ -185,7 +207,7 @@ class TestGlobalHookEvents(TransactionCase):
         self.env['rabbitmq.event.rule'].create({
             'name': 'Track phone',
             'model_id': self.partner_model.id,
-            'event_type': 'write',
+            'on_write': True,
             'exchange_name': 'odoo_events',
             'exchange_type': 'topic',
             'routing_key': 'res.partner.write',
@@ -193,12 +215,12 @@ class TestGlobalHookEvents(TransactionCase):
         })
         partner = self.env['res.partner'].create({'name': 'Filter Test'})
 
-        # Change name (not tracked) — no event
+        # Change name (not tracked) -- no event
         partner.write({'name': 'Changed'})
         logs = self._get_logs('write')
         self.assertFalse(logs)
 
-        # Change phone (tracked) — event fires
+        # Change phone (tracked) -- event fires
         partner.write({'phone': '555-1234'})
         logs = self._get_logs('write')
         self.assertTrue(logs)
@@ -206,7 +228,7 @@ class TestGlobalHookEvents(TransactionCase):
     def test_unlink_event(self):
         """Deleting a partner with an unlink rule should produce an event log."""
         partner = self.env['res.partner'].create({'name': 'To Delete'})
-        self._create_rule('unlink')
+        self._create_rule(on_unlink=True)
         partner.unlink()
         logs = self._get_logs('unlink')
         self.assertTrue(logs)
@@ -224,15 +246,27 @@ class TestGlobalHookEvents(TransactionCase):
 
     def test_state_change_event(self):
         """State change rule should fire when state field changes."""
-        self._create_rule('state_change')
+        self._create_rule(on_state_change=True)
         # res.partner doesn't have state, so write with vals containing 'state'
         # will check old vs new; since field doesn't exist, this tests gracefully
         partner = self.env['res.partner'].create({'name': 'State Test'})
-        # The state field won't exist on res.partner — ensure no crash
+        # The state field won't exist on res.partner -- ensure no crash
         partner.write({'name': 'Updated'})
         # No state_change log since 'state' wasn't in vals
         logs = self._get_logs('state_change')
         self.assertFalse(logs)
+
+    def test_multi_event_rule_fires_all(self):
+        """A rule with create+write+unlink should fire for all operations."""
+        self._create_rule(on_create=True, on_write=True, on_unlink=True)
+        partner = self.env['res.partner'].create({'name': 'Multi Test'})
+        self.assertTrue(self._get_logs('create'))
+
+        partner.write({'name': 'Updated'})
+        self.assertTrue(self._get_logs('write'))
+
+        partner.unlink()
+        self.assertTrue(self._get_logs('unlink'))
 
 
 class TestPreparePayload(TransactionCase):

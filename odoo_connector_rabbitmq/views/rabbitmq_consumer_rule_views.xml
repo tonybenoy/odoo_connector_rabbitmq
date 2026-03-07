@@ -9,14 +9,15 @@
             <list>
                 <field name="name"/>
                 <field name="queue_name"/>
-                <field name="exchange_name"/>
-                <field name="routing_key"/>
                 <field name="target_model"/>
-                <field name="processing_mode"/>
-                <field name="target_method" optional="show"/>
+                <field name="processing_mode" widget="badge"
+                       decoration-info="processing_mode == 'mapping'"
+                       decoration-muted="processing_mode == 'method'"/>
                 <field name="consumer_action" optional="show"/>
-                <field name="prefetch_count"/>
-                <field name="active"/>
+                <field name="exchange_name" optional="hide"/>
+                <field name="routing_key" optional="hide"/>
+                <field name="prefetch_count" optional="hide"/>
+                <field name="active" column_invisible="True"/>
             </list>
         </field>
     </record>
@@ -28,32 +29,51 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_events" type="object"
+                                class="oe_stat_button" icon="fa-envelope">
+                            <field name="event_count" string="Events"
+                                   widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="Rule Name"/></h1>
+                        <h1><field name="name" placeholder="e.g. Sync Partners from ERP"/></h1>
                     </div>
                     <group>
-                        <group string="Queue Configuration">
-                            <field name="queue_name"/>
-                            <field name="exchange_name"/>
-                            <field name="routing_key"/>
+                        <group string="Queue">
+                            <field name="queue_name"
+                                   placeholder="e.g. partner_sync"/>
+                            <field name="exchange_name"
+                                   placeholder="e.g. odoo_events"/>
+                            <field name="routing_key"
+                                   placeholder="e.g. odoo.res.partner.create"/>
                         </group>
-                        <group string="Processing">
+                        <group string="Target">
                             <field name="target_model"
                                    placeholder="e.g. res.partner"/>
                             <field name="processing_mode" widget="radio"/>
-                            <field name="target_method"
-                                   placeholder="e.g. _rmq_handle_message"
-                                   invisible="processing_mode != 'method'"/>
-                            <field name="consumer_action"
-                                   invisible="processing_mode != 'mapping'"/>
+                        </group>
+                    </group>
+                    <!-- Field Mapping options -->
+                    <group invisible="processing_mode != 'mapping'">
+                        <group string="Mapping Options">
+                            <field name="consumer_action" string="Action"/>
                             <field name="match_field"
                                    placeholder="e.g. email"
-                                   invisible="processing_mode != 'mapping' or consumer_action == 'create'"/>
+                                   invisible="consumer_action == 'create'"
+                                   string="Match By"/>
                             <field name="payload_root"
                                    placeholder="e.g. data.partner"
-                                   invisible="processing_mode != 'mapping'"/>
-                            <field name="prefetch_count"/>
-                            <field name="auto_ack"/>
+                                   string="JSON Root Path"/>
+                        </group>
+                    </group>
+                    <!-- Call Method options -->
+                    <group invisible="processing_mode != 'method'">
+                        <group string="Method Options">
+                            <field name="target_method"
+                                   placeholder="e.g. _rmq_handle_message"/>
                         </group>
                     </group>
                     <notebook invisible="processing_mode != 'mapping'">
@@ -72,16 +92,60 @@
                                     <field name="search_field"
                                            placeholder="e.g. code"
                                            invisible="field_type != 'many2one_search'"/>
-                                    <field name="default_value"/>
+                                    <field name="default_value"
+                                           placeholder="fallback value"/>
                                 </list>
                             </field>
                         </page>
+                        <page string="Advanced" name="advanced">
+                            <group>
+                                <field name="prefetch_count"
+                                       string="Messages per Batch"/>
+                                <field name="auto_ack"
+                                       help="When enabled, messages are acknowledged even if processing fails. Use with caution."/>
+                            </group>
+                        </page>
                     </notebook>
-                    <group>
-                        <field name="active"/>
+                    <group invisible="processing_mode == 'mapping'">
+                        <separator string="Advanced"/>
+                        <group>
+                            <field name="prefetch_count"
+                                   string="Messages per Batch"/>
+                            <field name="auto_ack"
+                                   help="When enabled, messages are acknowledged even if processing fails. Use with caution."/>
+                        </group>
                     </group>
+                    <field name="active" invisible="True"/>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="rabbitmq_consumer_rule_view_search" model="ir.ui.view">
+        <field name="name">rabbitmq.consumer.rule.search</field>
+        <field name="model">rabbitmq.consumer.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="queue_name"/>
+                <field name="target_model"/>
+                <separator/>
+                <filter name="filter_mapping" string="Field Mapping"
+                        domain="[('processing_mode', '=', 'mapping')]"/>
+                <filter name="filter_method" string="Call Method"
+                        domain="[('processing_mode', '=', 'method')]"/>
+                <separator/>
+                <filter name="filter_inactive" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <group name="group_by">
+                    <filter name="group_model" string="Target Model"
+                            context="{'group_by': 'target_model'}"/>
+                    <filter name="group_mode" string="Processing Mode"
+                            context="{'group_by': 'processing_mode'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -90,6 +154,16 @@
         <field name="name">Consumer Rules</field>
         <field name="res_model">rabbitmq.consumer.rule</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first consumer rule
+            </p>
+            <p>
+                Consumer rules process inbound RabbitMQ messages. Use
+                <strong>Field Mapping</strong> mode for zero-code JSON-to-Odoo mapping,
+                or <strong>Call Method</strong> for custom Python handlers.
+            </p>
+        </field>
     </record>
 
 </odoo>
